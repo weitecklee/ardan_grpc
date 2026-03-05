@@ -11,6 +11,14 @@ path = "src/streaming_server.rs"
 name = "streaming-client"
 path = "src/streaming_client.rs"
 
+[[bin]] # Bin to run the auth gRPC server
+name = "auth-server"
+path = "src/auth_server.rs"
+
+[[bin]] # Bin to run the auth gRPC client
+name = "auth-client"
+path = "src/auth_client.rs"
+
 [dependencies]
 prost = "0.12"
 tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
