@@ -3,13 +3,13 @@ name = "ardan_grpc"
 version = "0.1.0"
 edition = "2024"
 
-[[bin]] # Bin to run the gRPC server
-name = "server"
-path = "src/server.rs"
+[[bin]] # Bin to run the streaming gRPC server
+name = "streaming-server"
+path = "src/streaming_server.rs"
 
-[[bin]] # Bin to run the gRPC client
-name = "client"
-path = "src/client.rs"
+[[bin]] # Bin to run the streaming gRPC client
+name = "streaming-client"
+path = "src/streaming_client.rs"
 
 [dependencies]
 prost = "0.12"
