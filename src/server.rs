@@ -1,40 +1,46 @@
+use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status, transport::Server};
 
-pub mod hello_world {
-    tonic::include_proto!("hello");
+pub mod streaming {
+    tonic::include_proto!("streaming");
 }
 
-use hello_world::greeter_server::{Greeter, GreeterServer};
-use hello_world::{HelloReply, HelloRequest};
+use streaming::streaming_server::{Streaming, StreamingServer};
+use streaming::{Square, Start};
 
 #[derive(Debug, Default)]
-pub struct MyGreeter {}
+pub struct StreamingService {}
 
 #[tonic::async_trait]
-impl Greeter for MyGreeter {
-    async fn say_hello(
+impl Streaming for StreamingService {
+    type SquaresStream = ReceiverStream<Result<Square, Status>>;
+
+    async fn squares(
         &self,
-        request: Request<HelloRequest>,
-    ) -> Result<Response<HelloReply>, Status> {
+        request: Request<Start>,
+    ) -> Result<Response<Self::SquaresStream>, Status> {
         println!("Got a request: {:?}", request);
+        let (tx, rx) = tokio::sync::mpsc::channel(4);
 
-        let reply = hello_world::HelloReply {
-            message: format!("Hello {}!", request.into_inner().name),
-        };
+        tokio::spawn(async move {
+            for i in 0..=request.into_inner().n {
+                let square = Square { n: i * i };
+                tx.send(Ok(square)).await.unwrap();
+            }
+        });
 
-        Ok(Response::new(reply))
+        Ok(Response::new(ReceiverStream::new(rx)))
     }
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let addr = "[::1]:50051".parse()?;
-    let greeter = MyGreeter::default();
+    let addr = "[::1]:10000".parse().unwrap();
+    println!("Square Server listening on: {}", addr);
 
-    Server::builder()
-        .add_service(GreeterServer::new(greeter))
-        .serve(addr)
-        .await?;
+    let streamer = StreamingService {};
+    let svc = StreamingServer::new(streamer);
+    Server::builder().add_service(svc).serve(addr).await?;
 
     Ok(())
 }

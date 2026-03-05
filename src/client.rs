@@ -1,21 +1,20 @@
-pub mod hello_world {
-    tonic::include_proto!("hello");
+use streaming::{Start, streaming_client::StreamingClient};
+
+pub mod streaming {
+    tonic::include_proto!("streaming");
 }
 
-use hello_world::HelloRequest;
-use hello_world::greeter_client::GreeterClient;
-
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut client = GreeterClient::connect("http://[::1]:50051").await?;
-
-    let request = tonic::Request::new(HelloRequest {
-        name: "Tonic".into(),
-    });
-
-    let response = client.say_hello(request).await?;
-
-    println!("RESPONSE={:?}", response);
-
-    Ok(())
+async fn main() {
+    let mut client = StreamingClient::connect("http://[::1]:10000")
+        .await
+        .unwrap();
+    for n in 1..=100 {
+        println!("Requesting squares up to {}", n);
+        let request = tonic::Request::new(Start { n });
+        let mut stream = client.squares(request).await.unwrap().into_inner();
+        while let Some(result) = stream.message().await.unwrap() {
+            println!("RESULT={:?}", result);
+        }
+    }
 }
